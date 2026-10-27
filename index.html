@@ -357,6 +357,13 @@ details.prompt textarea{font-size:12.5px; color:#3A3F47; background:#fff; margin
 @keyframes dshake{20%,60%{transform:translateX(-7px)} 40%,80%{transform:translateX(7px)}}
 .dr-art{width:200px; height:200px; display:grid; place-items:center; font-size:110px; font-family:var(--emoji)}
 .dr-art img{width:100%; height:100%; object-fit:contain}
+.kiosk-exit{display:none; position:absolute; top:14px; right:14px; z-index:6; width:40px; height:40px; place-items:center; border:0; border-radius:50%; background:rgba(255,255,255,.55); font-size:17px; font-family:var(--emoji); opacity:.55; touch-action:none; user-select:none; -webkit-user-select:none; transition:background .15s, opacity .15s, transform .15s}
+.kiosk-exit.hold{background:var(--accent); opacity:1; transform:scale(1.2); transition:background 1s linear, opacity .15s, transform 1s linear}
+body.kiosk .topbar,body.kiosk #tab-draw .side{display:none}
+body.kiosk .kiosk-exit{display:grid}
+body.kiosk main{max-width:none; padding:16px}
+body.kiosk .draw{grid-template-columns:1fr}
+body.kiosk .stage{min-height:calc(100vh - 32px); justify-content:center}
 @media (prefers-reduced-motion:reduce){ .dcards.done .dcard.win,.dr-card,.dr-card.miss .dr-win{animation:none} }
 
 /* ───────── 반응형 ───────── */
@@ -492,6 +499,7 @@ details.prompt textarea{font-size:12.5px; color:#3A3F47; background:#fff; margin
   <section class="tab" id="tab-draw">
     <div class="draw">
       <div class="stage">
+        <button class="kiosk-exit" id="kioskExit" title="길게 누르면 선생님 화면으로 돌아가요" aria-label="선생님 화면으로 (길게 누르기)">🔒</button>
         <h2>🎁 오늘의 간식 뽑기</h2>
         <p class="lead" id="drawLead"></p>
         <input id="drawName" class="name-in" list="drawNames" maxlength="12" placeholder="내 이름" autocomplete="off">
@@ -501,6 +509,7 @@ details.prompt textarea{font-size:12.5px; color:#3A3F47; background:#fff; margin
         <div class="dresult" id="drawResult" hidden></div>
       </div>
       <aside class="side">
+        <button class="btn primary big" data-act="kioskOn">👀 학생 화면으로 바꾸기</button>
         <div class="panel">
           <h3>선생님 설정</h3>
           <div class="dset" id="drawSetup"></div>
@@ -508,6 +517,7 @@ details.prompt textarea{font-size:12.5px; color:#3A3F47; background:#fff; margin
         <div class="panel">
           <h3>뽑기 기록 <small id="drawCount"></small></h3>
           <div id="drawLog"></div>
+          <button class="btn sm full" style="margin-top:10px" data-act="tab" data-tab="issue">🖨️ 출력 목록 보러 가기 (③ 발급·인쇄)</button>
         </div>
       </aside>
     </div>
@@ -1096,7 +1106,6 @@ function drawPool(c){
 }
 // 간식 1장 = 10, 꽝 = 10 × 배율 (정수로 나눠 뽑아서 치우침이 없음)
 const cardWeight = s => s.miss ? Math.round(10 * S.settings.drawMissWeight) : 10;
-function cardPercents(pool){ const w = pool.map(cardWeight), t = w.reduce((a, b) => a + b, 0); return w.map(x => Math.round(100 * x / t)); }
 const drawLimit = () => S.settings.drawNoLimit ? 0 : S.settings.drawLimit;
 const reducedMotion = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
 // 0 ~ n-1 중 하나를 모두 같은 확률로 (나머지 치우침 없이)
@@ -1116,7 +1125,7 @@ function renderDraw(){ renderDrawSetup(); renderDrawCards(); renderDrawLog(); }
 function renderDrawSetup(){
   const c = drawCoupon(), list = snackCoupons(), st = S.settings, box = $('#drawSetup');
   if (!c){ box.innerHTML = `<div class="empty-sm">간식 고르기 쿠폰이 없어요.<br><button class="btn sm" data-act="tab" data-tab="coupons">쿠폰 만들러 가기</button></div>`; return; }
-  const caution = S.ui.cautionOn && S.ui.caution.trim(), m = missCard(), pool = drawPool(c), pct = cardPercents(pool);
+  const caution = S.ui.cautionOn && S.ui.caution.trim(), m = missCard();
   box.innerHTML =
     (list.length > 1 ? `<div class="sub-label">쓸 쿠폰</div><div class="chips">${list.map(x => `<button class="chip ${x === c ? 'on' : ''}" data-act="drawPickCoupon" data-id="${x.id}">${esc(x.name || '(이름 없음)')}</button>`).join('')}</div>` : '')+
     `<div class="sub-label">뽑기에 넣을 카드 <small>누르면 넣고 빼요</small></div><div class="chips">`+
@@ -1126,7 +1135,6 @@ function renderDrawSetup(){
     `<button class="btn sm" style="margin-top:8px" data-act="drawEdit">간식 그림·디자인 고치기 →</button>`+
     (st.drawMiss ? `<div class="sub-label">꽝 나오는 정도 <small>간식 하나와 비교</small></div><div class="chips">`+
         MISS_WEIGHTS.map(([w, l]) => `<button class="chip ${st.drawMissWeight === w ? 'on' : ''}" data-act="drawMissWeight" data-w="${w}">${l}</button>`).join('')+`</div>`+
-        (pool.length ? `<p class="hint">지금은 간식 하나 ${pct[0]}% · 꽝 ${pct[pct.length - 1]}%</p>` : '')+
         (missCoupon() ? `<label class="chk" style="margin-top:10px"><input type="checkbox" id="drawMissPrint" ${st.drawMissPrint ? 'checked' : ''}> 꽝 쿠폰도 출력 목록에 담기</label>`
                       : `<p class="hint">꽝 쿠폰이 없어서 꽝은 출력하지 않아요.</p>`) : '')+
     `<div class="sub-label">한 사람당 뽑기 횟수</div><div class="row">`+
@@ -1138,15 +1146,15 @@ function renderDrawSetup(){
 }
 function renderDrawLead(){
   const lim = drawLimit(), even = !S.settings.drawMiss || S.settings.drawMissWeight === 1;
-  $('#drawLead').textContent = `이름을 적고 버튼을 눌러요.${lim ? ` 한 사람당 ${lim}번 뽑을 수 있어요.` : ''} ${even ? '어떤 카드든 뽑힐 확률은 똑같아요!' : '간식은 모두 같은 확률로 뽑혀요!'}`;
+  $('#drawLead').textContent = ['이름을 적고 버튼을 눌러요.', lim ? `한 사람당 ${lim}번 뽑을 수 있어요.` : '', even ? '어떤 카드든 뽑힐 확률은 똑같아요!' : ''].filter(Boolean).join(' ');
 }
 function renderDrawCards(){
   if (drawBusy) return;
-  const c = drawCoupon(), pool = drawPool(c), pct = cardPercents(pool), box = $('#drawCards'), b = $('#drawBtn');
+  const c = drawCoupon(), pool = drawPool(c), box = $('#drawCards'), b = $('#drawBtn');
   box.classList.remove('done');
-  box.innerHTML = pool.map((s, i) => { const T = THEMES[s.theme] || THEMES.pink, src = imgSrc(s.image);
+  box.innerHTML = pool.map(s => { const T = THEMES[s.theme] || THEMES.pink, src = imgSrc(s.image);
       return `<div class="dcard ${s.miss ? 'miss' : ''}"><span class="dart" style="background:linear-gradient(135deg,${T.frame[0]},${T.soft})">${src ? `<img src="${src}" alt="">` : esc(s.emoji)}</span>`+
-        `<b>${esc(s.name)}</b><small>확률 ${pct[i]}%</small></div>`; }).join('')
+        `<b>${esc(s.name)}</b></div>`; }).join('')
     || `<div class="dempty">${c ? '뽑을 간식이 없어요.<br>선생님 설정에서 간식을 넣어 주세요.' : "간식 고르기 쿠폰이 없어요.<br>쿠폰 만들기에서 종류를 '간식 고르기'로 정한 쿠폰을 만들어 주세요."}</div>`;
   b.textContent = '간식 뽑기!'; b.disabled = !pool.length;
   $('#drawName').disabled = false;
@@ -1223,6 +1231,21 @@ function spinTo(win, n, done){
     k++; setTimeout(tick, 45 + 320 * (k / steps) ** 3);
   })();
 }
+// 학생 화면: 위쪽 메뉴와 선생님 설정·기록을 숨긴다. 🔒를 1초 길게 눌러야 돌아온다
+function setKiosk(on){
+  document.body.classList.toggle('kiosk', on);
+  if (!on) return renderDraw();
+  switchTab('draw');
+  toast('학생 화면이에요. 오른쪽 위 🔒를 길게 누르면 선생님 화면으로 돌아가요.');
+  $('#drawName').focus();
+}
+(function kioskExitHold(){
+  const b = $('#kioskExit'); let t;
+  const stop = () => { clearTimeout(t); b.classList.remove('hold'); };
+  b.addEventListener('pointerdown', e => { e.preventDefault(); b.classList.add('hold'); t = setTimeout(() => { stop(); setKiosk(false); }, 1000); });
+  ['pointerup', 'pointercancel', 'pointerleave'].forEach(ev => b.addEventListener(ev, stop));
+  b.addEventListener('contextmenu', e => e.preventDefault());
+})();
 const CONFETTI = ['#FF6B9A','#FFC21A','#3DD5A7','#5AA6FF','#A084FF','#FF8A3D'];
 function confettiHTML(){
   let h = '';
@@ -1533,6 +1556,7 @@ const actions = {
   goIssue: () => { const c = editing(); if (!c) return; S.ui.selCoupon = c.id; syncSnackTheme(c); renderPick(); save(); switchTab('issue'); },
   goDraw: () => { const c = editing(); if (!c) return; S.settings.drawCoupon = c.id; save(); switchTab('draw'); },
   draw: () => doDraw(),
+  kioskOn: () => setKiosk(true),
   drawNext: () => { const r = $('#drawResult'), n = $('#drawName'); r.hidden = true; r.innerHTML = ''; n.value = ''; renderDrawCards(); n.focus(); },
   drawAgain: () => { const r = $('#drawResult'); r.hidden = true; r.innerHTML = ''; renderDrawCards(); doDraw(); },
   drawAddSnack: () => addDrawSnack(),
