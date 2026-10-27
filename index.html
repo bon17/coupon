@@ -352,7 +352,12 @@ details.prompt textarea{font-size:12.5px; color:#3A3F47; background:#fff; margin
 .drow{display:grid; grid-template-columns:minmax(0,1fr) auto auto 30px; gap:8px; align-items:center; padding:4px 2px; border-bottom:1px solid #F1F3F5; font-size:13.5px; font-weight:800}
 .drow .dn{overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
 .drow .dt{color:var(--muted); font-size:12px; font-family:var(--mono)}
-@media (prefers-reduced-motion:reduce){ .dcards.done .dcard.win,.dr-card{animation:none} }
+.dcard.miss{background:#F7F8FA}
+.dr-card.miss .dr-win{color:#6D757E; animation:dshake .5s .1s}
+@keyframes dshake{20%,60%{transform:translateX(-7px)} 40%,80%{transform:translateX(7px)}}
+.dr-art{width:200px; height:200px; display:grid; place-items:center; font-size:110px; font-family:var(--emoji)}
+.dr-art img{width:100%; height:100%; object-fit:contain}
+@media (prefers-reduced-motion:reduce){ .dcards.done .dcard.win,.dr-card,.dr-card.miss .dr-win{animation:none} }
 
 /* ───────── 반응형 ───────── */
 @media (max-width:1240px){
@@ -488,7 +493,7 @@ details.prompt textarea{font-size:12.5px; color:#3A3F47; background:#fff; margin
     <div class="draw">
       <div class="stage">
         <h2>🎁 오늘의 간식 뽑기</h2>
-        <p class="lead">이름을 적고 버튼을 눌러요. 어떤 간식이든 뽑힐 확률은 똑같아요!</p>
+        <p class="lead" id="drawLead"></p>
         <input id="drawName" class="name-in" list="drawNames" maxlength="12" placeholder="내 이름" autocomplete="off">
         <datalist id="drawNames"></datalist>
         <div class="dcards" id="drawCards"></div>
@@ -658,6 +663,7 @@ const BODY_FONTS = {
   pen:   {label:'나눔손글씨 펜',   sample:'청소 당번', css:"'Nanum Pen Script'", scale:1.45},
 };
 const KIND_LABEL = {normal:'일반', snack:'간식 고르기', blank:'꽝'};
+const MISS_WEIGHTS = [[1,'똑같이'], [1.2,'1.2배'], [1.5,'1.5배'], [2,'2배']];     // 뽑기에서 꽝이 간식 하나보다 몇 배 자주 나오는지
 const EMOJIS = ['🧹','🧽','🪣','🧼','🪑','👑','💺','⏭️','🙊','🤫','🎧','📦','🎁','🧺','🍬','🍭','🍫','🍪','🍩','🧁','🍦','🍿','🥤','🍕','🍔','🍟','🎮','📚','✏️','⏰','🎵','⚽','🏀','💤','🛋️','🎫','⭐','🏆','🎉','😜','💨','🍀','🎯','💰','🎈','📱','🧸','🌈'];
 const STYLE_LINE = '스타일: 귀엽고 깔끔한 3D 아이콘 일러스트, 말랑한 클레이 질감, 밝은 파스텔 톤, 부드러운 조명과 그림자, 살짝 위에서 본 시점. 물체만 화면 중앙에 크게. 글자·숫자·로고 없음. 배경은 투명한 PNG, 정사각형.';
 
@@ -693,6 +699,10 @@ function defaultCoupons(){
         {name:'마이쮸', emoji:'🍬', theme:'pink', image:'default:snack-mychew', art:'마이쮸 같은 네모난 말랑 츄잉 캔디. 길쭉한 직사각형 스틱 포장 1개(한쪽 끝이 뜯겨 열림)와, 껌처럼 네모나게 접힌 종이로 낱개 포장된 납작한 정사각형 캔디 3~4개(양 끝을 비튼 사탕 모양 아님), 그중 하나는 포장을 반쯤 벗겨 쫀득한 캔디가 보이게. 딸기 분홍·포도 보라·사과 연두·복숭아 주황'},
         {name:'사탕', emoji:'🍭', theme:'mint', image:'default:snack-candy', art:'무지개색 막대사탕 하나와 포장된 사탕 두세 개'},
         {name:'초콜릿', emoji:'🍫', theme:'choco', image:'default:snack-choco', art:'은박 포장지가 반쯤 벗겨진 판 초콜릿'},
+        {name:'젤리', emoji:'🐻', theme:'violet', image:null, art:'알록달록한 곰돌이 모양 젤리 여러 개와 투명한 젤리 봉지 하나(상표 없음), 그중 하나는 말랑하게 살짝 눌린 모습'},
+        {name:'과자', emoji:'🍪', theme:'yellow', image:null, art:'봉지가 열린 바삭한 감자칩과 동그란 쿠키 몇 개(상표 없음)'},
+        {name:'음료수', emoji:'🧃', theme:'sky', image:null, art:'빨대가 꽂힌 귀여운 종이팩 주스 하나와 작은 병 음료 하나(상표 없음)'},
+        {name:'비타민', emoji:'🍊', theme:'orange', image:null, art:'동글동글한 주황색 비타민 C 사탕 여러 개와 낱개 포장 하나(상표 없음)'},
       ],
       customSnack:{emoji:'🍪', theme:'yellow', image:'default:snack-custom', art:'과자·젤리·사탕이 알록달록 섞여 담긴 귀여운 간식 봉지(상표 없음)'}},
     {id:'c-miss', name:'꽝', kind:'blank', theme:'gray', style:'tiles', emoji:'😜', image:'default:c-miss',
@@ -702,14 +712,21 @@ function defaultCoupons(){
 function defaultSettings(){
   return {campaign:'바른언어 사용 캠페인', tags:['언제든지','사용가능','보은쌤쿠폰'], issuer:'보은쌤', stampLabel:'선생님 확인',
     notice:'타인에게 양도할 수 없어요', stamp:'default:stamp', font:'jua', bodyFont:'nsr', savedDates:[], frame:true, cutLines:true, printLog:true,
-    drawCoupon:'c-snack', drawOff:[], drawOnce:true};
+    drawCoupon:'c-snack', drawOff:[], drawMiss:true, drawMissWeight:1.2, drawMissPrint:true, drawLimit:1, drawNoLimit:false};
 }
 function defaults(){
   return {
-    v:1, settings:defaultSettings(), students:[], coupons:defaultCoupons(), queue:[], draws:[], serial:{day:'', seq:0},
+    v:2, settings:defaultSettings(), students:[], coupons:defaultCoupons(), queue:[], draws:[], serial:{day:'', seq:0},
     ui:{tab:'coupons', selCoupon:'c-clean', snack:'마이쮸', snackCustom:'', snackTheme:'pink', selStudents:[], perStudent:1, blankCount:0,
       editId:'c-clean', validity:{forever:false, date:addMonths(1)}, cautionOn:false, caution:''},
   };
+}
+// v2에서 늘어난 기본 간식을 이미 쓰던 간식 교환권에도 넣어 준다
+function addV2Snacks(coupons){
+  const c = coupons.find(x => x.id === 'c-snack' && x.kind === 'snack'); if (!c) return;
+  const added = ['젤리', '과자', '음료수', '비타민'];
+  for (const s of defaultCoupons().find(x => x.id === 'c-snack').snacks)
+    if (added.includes(s.name) && !c.snacks.some(x => x.name === s.name)) c.snacks.push(s);
 }
 function normCoupon(c){
   return {
@@ -727,7 +744,10 @@ function normSettings(st){
   if (!TITLE_FONTS[st.font]) st.font = 'jua';
   if (!BODY_FONTS[st.bodyFont]) st.bodyFont = 'nsr';
   st.drawOff = Array.isArray(st.drawOff) ? st.drawOff.map(String) : [];
-  st.drawOnce = st.drawOnce !== false;
+  if ('drawOnce' in st){ if (st.drawOnce === false) st.drawNoLimit = true; delete st.drawOnce; }    // 예전 '한 번만 뽑기' 설정
+  st.drawLimit = clamp(parseInt(st.drawLimit, 10) || 1, 1, 20);
+  st.drawNoLimit = !!st.drawNoLimit; st.drawMiss = st.drawMiss !== false; st.drawMissPrint = st.drawMissPrint !== false;
+  st.drawMissWeight = MISS_WEIGHTS.some(([w]) => w === +st.drawMissWeight) ? +st.drawMissWeight : 1.2;
   st.savedDates = Array.isArray(st.savedDates) ? [...new Set(st.savedDates.filter(d => /^\d{4}-\d{2}-\d{2}$/.test(d)))].sort() : [];
   return st;
 }
@@ -769,6 +789,8 @@ function load(){
       serial:d.serial && typeof d.serial.seq === 'number' ? d.serial : base.serial,
     };
     normSettings(st.settings);
+    if ((d.v || 1) < 2) addV2Snacks(st.coupons);
+    st.v = 2;
     if (!st.ui.validity || !st.ui.validity.date || st.ui.validity.date < iso(new Date())) st.ui.validity = {forever:!!st.ui.validity?.forever, date:addMonths(1)};
     return st;
   }catch(e){ return base; }
@@ -1055,9 +1077,20 @@ function doPrint(){
 /* ───────── 간식 뽑기 ───────── */
 let drawBusy = false;
 const nameKey = s => String(s || '').replace(/\s+/g, '');
+const josa = (w, a, b) => hasBatchim(w) ? a : b;
 const snackCoupons = () => S.coupons.filter(c => c.kind === 'snack');
 function drawCoupon(){ const list = snackCoupons(); return list.find(c => c.id === S.settings.drawCoupon) || list[0] || null; }
-const drawPool = c => c ? c.snacks.filter(s => s.name.trim() && !S.settings.drawOff.includes(s.name)) : [];
+const missCoupon = () => S.coupons.find(c => c.kind === 'blank') || null;
+function missCard(){ const m = missCoupon(); return {name:'꽝', miss:true, emoji:m?.emoji || '😜', theme:m?.theme || 'gray', image:m?.image || null}; }
+// 뽑기 카드 = 켜 둔 간식 + 꽝 (간식이 하나도 없으면 뽑지 않음)
+function drawPool(c){
+  const list = c ? c.snacks.filter(s => s.name.trim() && !S.settings.drawOff.includes(s.name)) : [];
+  return list.length && S.settings.drawMiss ? [...list, missCard()] : list;
+}
+// 간식 1장 = 10, 꽝 = 10 × 배율 (정수로 나눠 뽑아서 치우침이 없음)
+const cardWeight = s => s.miss ? Math.round(10 * S.settings.drawMissWeight) : 10;
+function cardPercents(pool){ const w = pool.map(cardWeight), t = w.reduce((a, b) => a + b, 0); return w.map(x => Math.round(100 * x / t)); }
+const drawLimit = () => S.settings.drawNoLimit ? 0 : S.settings.drawLimit;
 const reducedMotion = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
 // 0 ~ n-1 중 하나를 모두 같은 확률로 (나머지 치우침 없이)
 function fairPick(n){
@@ -1066,44 +1099,82 @@ function fairPick(n){
   do crypto.getRandomValues(a); while (a[0] >= lim);
   return a[0] % n;
 }
+// 무게대로 하나 고르기. 뽑을 때마다 새로 고르므로 같은 간식이 몇 번이고 또 나올 수 있다
+function weightedPick(weights){
+  let r = fairPick(weights.reduce((a, b) => a + b, 0));
+  for (let i = 0; i < weights.length; i++){ r -= weights[i]; if (r < 0) return i; }
+  return weights.length - 1;
+}
 function renderDraw(){ renderDrawSetup(); renderDrawCards(); renderDrawLog(); }
 function renderDrawSetup(){
   const c = drawCoupon(), list = snackCoupons(), st = S.settings, box = $('#drawSetup');
   if (!c){ box.innerHTML = `<div class="empty-sm">간식 고르기 쿠폰이 없어요.<br><button class="btn sm" data-act="tab" data-tab="coupons">쿠폰 만들러 가기</button></div>`; return; }
-  const caution = S.ui.cautionOn && S.ui.caution.trim();
+  const caution = S.ui.cautionOn && S.ui.caution.trim(), m = missCard(), pool = drawPool(c), pct = cardPercents(pool);
   box.innerHTML =
     (list.length > 1 ? `<div class="sub-label">쓸 쿠폰</div><div class="chips">${list.map(x => `<button class="chip ${x === c ? 'on' : ''}" data-act="drawPickCoupon" data-id="${x.id}">${esc(x.name || '(이름 없음)')}</button>`).join('')}</div>` : '')+
-    `<div class="sub-label">뽑기에 넣을 간식 <small>누르면 넣고 빼요</small></div><div class="chips">`+
+    `<div class="sub-label">뽑기에 넣을 카드 <small>누르면 넣고 빼요</small></div><div class="chips">`+
       c.snacks.filter(s => s.name.trim()).map(s => `<button class="chip ${st.drawOff.includes(s.name) ? 'off' : 'on'}" data-act="drawToggle" data-name="${esc(s.name)}">${esc(s.emoji)} ${esc(s.name)}</button>`).join('')+
-    `</div><button class="btn sm" style="margin-top:8px" data-act="drawEdit">간식 종류 고치기 →</button>`+
+      `<button class="chip ${st.drawMiss ? 'on' : 'off'}" data-act="drawMissToggle">${esc(m.emoji)} 꽝</button></div>`+
+    `<div class="row" style="margin-top:8px"><input id="drawNewSnack" maxlength="10" placeholder="새 간식 이름 (예: 쿠키)" style="flex:1"><button class="btn sm" data-act="drawAddSnack">＋ 간식 추가</button></div>`+
+    `<button class="btn sm" style="margin-top:8px" data-act="drawEdit">간식 그림·디자인 고치기 →</button>`+
+    (st.drawMiss ? `<div class="sub-label">꽝 나오는 정도 <small>간식 하나와 비교</small></div><div class="chips">`+
+        MISS_WEIGHTS.map(([w, l]) => `<button class="chip ${st.drawMissWeight === w ? 'on' : ''}" data-act="drawMissWeight" data-w="${w}">${l}</button>`).join('')+`</div>`+
+        (pool.length ? `<p class="hint">지금은 간식 하나 ${pct[0]}% · 꽝 ${pct[pct.length - 1]}%</p>` : '')+
+        (missCoupon() ? `<label class="chk" style="margin-top:10px"><input type="checkbox" id="drawMissPrint" ${st.drawMissPrint ? 'checked' : ''}> 꽝 쿠폰도 출력 목록에 담기</label>`
+                      : `<p class="hint">꽝 쿠폰이 없어서 꽝은 출력하지 않아요.</p>`) : '')+
+    `<div class="sub-label">한 사람당 뽑기 횟수</div><div class="row">`+
+      `<input type="number" id="drawLimit" min="1" max="20" value="${st.drawLimit}" style="width:64px;text-align:center" ${st.drawNoLimit ? 'disabled' : ''}><b>번까지</b>`+
+      `<label class="chk" style="margin-left:auto"><input type="checkbox" id="drawNoLimit" ${st.drawNoLimit ? 'checked' : ''}> 제한 없음</label></div>`+
+    `<p class="hint">뽑을 때마다 새로 뽑아서 같은 간식이 또 나올 수 있어요.</p>`+
     `<div class="sub-label">사용기간</div><div class="dvalid"><span>${esc(validityText(S.ui.validity))}</span><button class="btn sm" data-act="tab" data-tab="issue">바꾸기</button></div>`+
-    `<p class="hint">③ 발급·인쇄에서 정한 사용기간${caution ? '과 주의사항' : ''}이 그대로 들어가요.</p>`+
-    `<label class="chk" style="margin-top:14px"><input type="checkbox" id="drawOnce" ${st.drawOnce ? 'checked' : ''}> 한 사람당 한 번만 뽑기</label>`;
+    `<p class="hint">③ 발급·인쇄에서 정한 사용기간${caution ? '과 주의사항' : ''}이 그대로 들어가요.</p>`;
+}
+function renderDrawLead(){
+  const lim = drawLimit(), even = !S.settings.drawMiss || S.settings.drawMissWeight === 1;
+  $('#drawLead').textContent = `이름을 적고 버튼을 눌러요.${lim ? ` 한 사람당 ${lim}번 뽑을 수 있어요.` : ''} ${even ? '어떤 카드든 뽑힐 확률은 똑같아요!' : '간식은 모두 같은 확률로 뽑혀요!'}`;
 }
 function renderDrawCards(){
   if (drawBusy) return;
-  const c = drawCoupon(), pool = drawPool(c), box = $('#drawCards'), b = $('#drawBtn');
+  const c = drawCoupon(), pool = drawPool(c), pct = cardPercents(pool), box = $('#drawCards'), b = $('#drawBtn');
   box.classList.remove('done');
-  box.innerHTML = pool.map(s => { const T = THEMES[s.theme] || THEMES.pink, src = imgSrc(s.image);
-      return `<div class="dcard"><span class="dart" style="background:linear-gradient(135deg,${T.frame[0]},${T.soft})">${src ? `<img src="${src}" alt="">` : esc(s.emoji)}</span>`+
-        `<b>${esc(s.name)}</b><small>확률 1/${pool.length}</small></div>`; }).join('')
+  box.innerHTML = pool.map((s, i) => { const T = THEMES[s.theme] || THEMES.pink, src = imgSrc(s.image);
+      return `<div class="dcard ${s.miss ? 'miss' : ''}"><span class="dart" style="background:linear-gradient(135deg,${T.frame[0]},${T.soft})">${src ? `<img src="${src}" alt="">` : esc(s.emoji)}</span>`+
+        `<b>${esc(s.name)}</b><small>확률 ${pct[i]}%</small></div>`; }).join('')
     || `<div class="dempty">${c ? '뽑을 간식이 없어요.<br>선생님 설정에서 간식을 넣어 주세요.' : "간식 고르기 쿠폰이 없어요.<br>쿠폰 만들기에서 종류를 '간식 고르기'로 정한 쿠폰을 만들어 주세요."}</div>`;
   b.textContent = '간식 뽑기!'; b.disabled = !pool.length;
   $('#drawName').disabled = false;
+  renderDrawLead();
 }
 function renderDrawNames(){ $('#drawNames').innerHTML = S.students.filter(s => s.name).map(s => `<option value="${esc(s.name)}"></option>`).join(''); }
 function renderDrawLog(){
-  const list = S.draws, box = $('#drawLog');
-  $('#drawCount').textContent = list.length ? `${list.length}명` : '';
+  const list = S.draws, box = $('#drawLog'), c = drawCoupon(), m = missCard();
+  const people = new Set(list.map(d => nameKey(d.name))).size;
+  $('#drawCount').textContent = !list.length ? '' : people === list.length ? `${people}명` : `${people}명 · ${list.length}번`;
   if (!list.length){ box.innerHTML = '<div class="empty-sm">아직 뽑은 사람이 없어요.</div>'; return; }
-  const counts = {}, c = drawCoupon();
-  list.forEach(d => { counts[d.snack] = (counts[d.snack] || 0) + 1; });
-  const emo = n => (c && snackOf(c, n)?.emoji) || '🍬';
+  const emo = d => d.miss ? m.emoji : (c && snackOf(c, d.snack)?.emoji) || '🍬';
+  const counts = new Map();
+  list.forEach(d => { const e = counts.get(d.snack) || {n:0, emoji:emo(d)}; e.n++; counts.set(d.snack, e); });
   const time = t => { const d = new Date(t); return `${pad(d.getHours())}:${pad(d.getMinutes())}`; };
-  box.innerHTML = `<div class="dl-sum">${Object.entries(counts).map(([k, n]) => `<span>${esc(emo(k))} ${esc(k)} <b>${n}</b></span>`).join('')}</div>`+
-    `<div class="dlist">${list.slice().reverse().map(d => `<div class="drow"><span class="dn">${esc(d.name)}</span><span>${esc(emo(d.snack))} ${esc(d.snack)}</span>`+
+  box.innerHTML = `<div class="dl-sum">${[...counts].map(([k, e]) => `<span>${esc(e.emoji)} ${esc(k)} <b>${e.n}</b></span>`).join('')}</div>`+
+    `<div class="dlist">${list.slice().reverse().map(d => `<div class="drow"><span class="dn">${esc(d.name)}</span><span>${esc(emo(d))} ${esc(d.snack)}</span>`+
       `<span class="dt">${time(d.at)}</span><button class="icon-btn" data-act="drawUndo" data-qid="${esc(d.qid)}" title="기록과 출력 목록에서 빼기">✕</button></div>`).join('')}</div>`+
     `<button class="btn sm" data-act="drawReset">기록 지우고 새로 시작</button>`;
+}
+function addDrawSnack(){
+  const c = drawCoupon(), input = $('#drawNewSnack'); if (!c || !input) return;
+  const name = input.value.trim().replace(/\s+/g, ' ');
+  if (!name){ input.focus(); return toast('간식 이름을 적어 주세요', true); }
+  if (c.snacks.some(s => s.name === name)){
+    S.settings.drawOff = S.settings.drawOff.filter(x => x !== name);
+    toast(`'${name}'${josa(name, '은', '는')} 이미 있어요. 뽑기에 넣어 두었어요.`);
+  } else {
+    const used = new Set(c.snacks.map(s => s.theme));
+    const theme = Object.keys(THEMES).find(k => k !== 'noir' && k !== 'gray' && !used.has(k)) || 'yellow';
+    c.snacks.push(normSnack({name, emoji:c.customSnack.emoji || '🍪', theme}));
+    toast(`'${name}'${josa(name, '을', '를')} 넣었어요. 그림은 '간식 그림·디자인 고치기'에서 넣을 수 있어요.`);
+  }
+  renderCouponsTab(); renderPick(); renderDraw(); save();
+  $('#drawNewSnack')?.focus();
 }
 function doDraw(){
   if (drawBusy || !$('#drawResult').hidden) return;
@@ -1112,20 +1183,24 @@ function doDraw(){
   const typed = input.value.trim().replace(/\s+/g, ' ');
   if (!typed){ input.focus(); return toast('이름을 먼저 적어 주세요', true); }
   const key = nameKey(typed), stu = S.students.find(s => nameKey(s.name) === key), name = stu ? stu.name : typed;
-  const prev = S.settings.drawOnce && S.draws.find(d => nameKey(d.name) === key);
-  if (prev) return toast(`${name}${hasBatchim(name) ? '은' : '는'} 벌써 뽑았어요 (${prev.snack})`, true);
-  if (S.students.length && !stu && !confirm(`'${name}'${hasBatchim(name) ? '은' : '는'} 학생 명단에 없어요. 그래도 뽑을까요?`)) return;
+  const lim = drawLimit(), mine = S.draws.filter(d => nameKey(d.name) === key);
+  if (lim && mine.length >= lim) return toast(lim === 1 ? `${name}${josa(name, '은', '는')} 벌써 뽑았어요 (${mine[0].snack})` : `${name}${josa(name, '은', '는')} ${lim}번 다 뽑았어요`, true);
+  if (S.students.length && !stu && !mine.length && !confirm(`'${name}'${josa(name, '은', '는')} 학생 명단에 없어요. 그래도 뽑을까요?`)) return;
   const v = S.ui.validity;
   if (!v.forever && !v.date) return toast('사용기간을 먼저 정해 주세요 (③ 발급·인쇄)', true);
-  const win = fairPick(pool.length), snack = pool[win];
-  const item = {couponId:c.id, snackName:snack.name, theme:snack.theme, validity:{forever:!!v.forever, date:v.date},
-    caution:S.ui.cautionOn ? S.ui.caution.trim() : '', qid:uid(), no:stu ? stu.no : null, name, serial:nextSerial()};
-  S.queue.push(item);
-  S.draws.push({qid:item.qid, name, snack:snack.name, at:Date.now()});
-  save(true); renderQueue(); renderSettings();
+  const win = weightedPick(pool.map(cardWeight)), pick = pool[win];
+  const coupon = pick.miss ? (S.settings.drawMissPrint ? missCoupon() : null) : c;
+  const item = coupon ? {couponId:coupon.id, snackName:pick.miss ? '' : pick.name, theme:pick.theme, validity:{forever:!!v.forever, date:v.date},
+    caution:S.ui.cautionOn ? S.ui.caution.trim() : '', qid:uid(), no:stu ? stu.no : null, name, serial:nextSerial()} : null;
+  if (item) S.queue.push(item);
+  const rec = {qid:item ? item.qid : uid(), name, snack:pick.name, miss:!!pick.miss, at:Date.now()};
+  S.draws.push(rec);
+  save(true);
+  if (item){ renderQueue(); renderSettings(); }
   drawBusy = true; input.disabled = true;
   const b = $('#drawBtn'); b.disabled = true; b.textContent = '두근두근…';
-  spinTo(win, pool.length, () => { drawBusy = false; showDrawResult(item); renderDrawLog(); });
+  const left = lim ? lim - mine.length - 1 : 0;
+  spinTo(win, pool.length, () => { drawBusy = false; showDrawResult(rec, item, pick, left); renderDrawLog(); });
 }
 // 카드를 몇 바퀴 돌며 비추다가 천천히 win에서 멈춘다 (결과는 이미 정해져 있음)
 function spinTo(win, n, done){
@@ -1147,18 +1222,21 @@ function confettiHTML(){
   for (let i = 0; i < 36; i++) h += `<i style="left:${(Math.random() * 100).toFixed(1)}%;background:${CONFETTI[i % CONFETTI.length]};animation-delay:${(Math.random() * .6).toFixed(2)}s;--r:${Math.round(Math.random() * 720 - 360)}deg"></i>`;
   return h;
 }
-function showDrawResult(it){
-  const c = couponById(it.couponId), box = $('#drawResult'); if (!c) return;
-  box.innerHTML = (reducedMotion() ? '' : `<div class="confetti">${confettiHTML()}</div>`)+`<div class="dr-card">`+
-    `<div class="dr-hi"><b>${esc(it.name)}</b> 친구는…</div>`+
-    `<div class="dr-win">${esc(snackOf(c, it.snackName)?.emoji || '🎉')} ${esc(it.snackName)} 당첨!</div>`+
-    `<div class="dr-coupon"><div>${couponCell({...it, coupon:c})}</div></div>`+
-    `<div class="hint">출력 목록에 담았어요 · No.${esc(it.serial)}</div>`+
-    `<button class="btn primary big" data-act="drawNext">다음 친구 차례 →</button></div>`;
+// rec = 뽑기 기록, item = 출력 목록에 담은 쿠폰(꽝을 출력하지 않으면 null), left = 이 사람이 더 뽑을 수 있는 횟수
+function showDrawResult(rec, item, pick, left){
+  const box = $('#drawResult'), c = item && couponById(item.couponId), src = imgSrc(pick.image);
+  box.innerHTML = (rec.miss || reducedMotion() ? '' : `<div class="confetti">${confettiHTML()}</div>`)+`<div class="dr-card ${rec.miss ? 'miss' : ''}">`+
+    `<div class="dr-hi"><b>${esc(rec.name)}</b> 친구는…</div>`+
+    `<div class="dr-win">${esc(pick.emoji)} ${rec.miss ? '아쉽지만 꽝!' : `${esc(pick.name)} 당첨!`}</div>`+
+    (c ? `<div class="dr-coupon"><div>${couponCell({...item, coupon:c})}</div></div>` : `<div class="dr-art">${src ? `<img src="${src}" alt="">` : esc(pick.emoji)}</div>`)+
+    `<div class="hint">${item ? `${rec.miss ? '꽝 쿠폰도 ' : ''}출력 목록에 담았어요 · No.${esc(item.serial)}` : '다음 기회를 노려 봐요!'}</div>`+
+    `<div class="row" style="justify-content:center">`+
+      (left > 0 ? `<button class="btn primary big" data-act="drawAgain">한 번 더 뽑기 · ${left}번 남음</button>` : '')+
+      `<button class="btn ${left > 0 ? '' : 'primary '}big" data-act="drawNext">다음 친구 차례 →</button></div></div>`;
   box.hidden = false;
-  $('.dr-coupon > div', box).style.transform = `scale(${280 / (92 * MM)})`;
+  if (c) $('.dr-coupon > div', box).style.transform = `scale(${280 / (92 * MM)})`;
   fitIn(box);
-  $('[data-act="drawNext"]', box).focus();
+  $('.dr-card .btn', box).focus();
 }
 
 /* ───────── ② 쿠폰 관리 ───────── */
@@ -1449,6 +1527,10 @@ const actions = {
   goDraw: () => { const c = editing(); if (!c) return; S.settings.drawCoupon = c.id; save(); switchTab('draw'); },
   draw: () => doDraw(),
   drawNext: () => { const r = $('#drawResult'), n = $('#drawName'); r.hidden = true; r.innerHTML = ''; n.value = ''; renderDrawCards(); n.focus(); },
+  drawAgain: () => { const r = $('#drawResult'); r.hidden = true; r.innerHTML = ''; renderDrawCards(); doDraw(); },
+  drawAddSnack: () => addDrawSnack(),
+  drawMissToggle: () => { if (drawBusy) return; S.settings.drawMiss = !S.settings.drawMiss; renderDrawSetup(); renderDrawCards(); save(); },
+  drawMissWeight: b => { if (drawBusy) return; S.settings.drawMissWeight = +b.dataset.w; renderDrawSetup(); renderDrawCards(); save(); },
   drawPickCoupon: b => { if (drawBusy) return; S.settings.drawCoupon = b.dataset.id; renderDraw(); save(); },
   drawToggle: b => {
     if (drawBusy) return;
@@ -1597,6 +1679,7 @@ document.addEventListener('input', e => {
   else if (t.id === 'perStudent' || t.id === 'blankCount'){ S.ui[t.id] = Math.max(0, parseInt(t.value, 10) || 0); updateAddBtn(); save(); }
   else if (t.id === 'snackCustom'){ S.ui.snackCustom = t.value; renderSnackTools(); thumbsSoon(); save(); }
   else if (t.id === 'cautionText'){ S.ui.caution = t.value; refreshCommon(); save(); }
+  else if (t.id === 'drawLimit'){ S.settings.drawLimit = clamp(parseInt(t.value, 10) || 1, 1, 20); renderDrawLead(); save(); }
   else if (t.dataset.stu === 'name'){ const s = S.students.find(x => x.id === t.closest('tr').dataset.id); if (s){ s.name = t.value.trim(); renderStuPick(); save(); } }
 });
 document.addEventListener('change', e => {
@@ -1613,13 +1696,17 @@ document.addEventListener('change', e => {
     const s = S.students.find(x => x.id === t.closest('tr').dataset.id);
     if (s){ s.no = Math.max(1, parseInt(t.value, 10) || 1); S.students.sort((a, b) => a.no - b.no); renderStudents(); renderStuPick(); save(); }
   } else if (t.dataset.stu === 'name'){ const s = S.students.find(x => x.id === t.closest('tr').dataset.id); if (s && !s.name) toast('이름이 비어 있어요', true); }
-  else if (t.id === 'drawOnce'){ S.settings.drawOnce = t.checked; save(); }
+  else if (t.id === 'drawLimit'){ t.value = S.settings.drawLimit; }
+  else if (t.id === 'drawNoLimit'){ S.settings.drawNoLimit = t.checked; renderDrawSetup(); renderDrawLead(); save(); }
+  else if (t.id === 'drawMissPrint'){ S.settings.drawMissPrint = t.checked; save(); }
   else if (t.id === 'fileIn'){ handleUpload(t.files[0]); }
   else if (t.id === 'importIn'){ if (t.files[0]) importBackup(t.files[0]); }
 });
 
 document.addEventListener('keydown', e => {
-  if (e.key === 'Enter' && e.target.id === 'drawName' && !e.isComposing){ e.preventDefault(); doDraw(); }
+  if (e.key !== 'Enter' || e.isComposing) return;
+  if (e.target.id === 'drawName'){ e.preventDefault(); doDraw(); }
+  else if (e.target.id === 'drawNewSnack'){ e.preventDefault(); addDrawSnack(); }
 });
 document.addEventListener('focusin', e => { if (e.target.id === 'drawName') renderDrawNames(); });
 
