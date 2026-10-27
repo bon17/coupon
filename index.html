@@ -286,6 +286,39 @@ details.prompt textarea{font-size:12.5px; color:#3A3F47; background:#fff; margin
 .rm{position:absolute; right:1.2mm; top:1.2mm; z-index:4; width:7.5mm; height:7.5mm; border-radius:50%; border:0; background:rgba(17,24,39,.8); color:#fff; font-size:3.4mm; line-height:1; display:grid; place-items:center; opacity:0; transition:opacity .15s}
 .cell:hover .rm{opacity:1}
 
+/* 작은 쿠폰 (A4 12장·18장): 칸 46mm 높이, 가로 94.5mm(12장)·63mm(18장) */
+.tgrid{position:absolute; left:10.5mm; top:10.5mm; display:grid; grid-template-rows:repeat(6,46mm)}
+.tgrid.m{grid-template-columns:repeat(2,94.5mm)}
+.tgrid.s{grid-template-columns:repeat(3,63mm)}
+.tk{position:relative; height:46mm; padding:2mm; font-family:var(--body); color:#1A1D23; line-height:1.25; text-align:left}
+.tk.m{width:94.5mm}
+.tk.s{width:63mm}
+.tk:hover .rm{opacity:1}
+.tk-in{position:relative; width:100%; height:100%; display:flex; flex-direction:column; overflow:hidden; background:#fff; border:.45mm solid var(--pri); border-radius:3mm}
+.tk-band{flex:none; height:5mm; display:flex; align-items:center; gap:2mm; padding:0 2.6mm; background:var(--pri); color:#fff; font-size:2.1mm; font-weight:800; white-space:nowrap}
+.tk-band span{flex:1; min-width:0; overflow:hidden}
+.tk-band b{flex:none; margin-left:auto; font-family:var(--mono); font-weight:600; font-size:1.95mm; letter-spacing:.05mm}
+.tk-bd{flex:1; min-height:0; display:flex; align-items:center; gap:2mm; padding:1mm 2.2mm 1mm 1.8mm}
+.tk-art{flex:none; position:relative; width:16mm; height:16mm; display:grid; place-items:center}
+.tk.m .tk-art{width:21mm; height:21mm}
+.tk-art::before{content:''; position:absolute; inset:.6mm; border-radius:50%; background:var(--soft)}
+.tk-art img{position:absolute; left:0; top:0; width:100%; height:100%; object-fit:contain}
+.tk-art i{position:relative; font-style:normal; font-size:9.5mm; line-height:1; font-family:var(--emoji)}
+.tk-tx{flex:1; min-width:0; display:flex; flex-direction:column; gap:.3mm}
+.tk-l1{font-family:var(--cute); font-weight:var(--cute-w); font-size:calc(3.6mm * var(--cs)); line-height:1.15; color:var(--l1); white-space:nowrap; overflow:hidden}
+.tk-l2{font-family:var(--cute); font-weight:var(--cute-w); font-size:calc(7.6mm * var(--cs)); line-height:1.05; color:var(--big); white-space:nowrap; overflow:hidden; letter-spacing:-.15mm}
+.tk.m .tk-l2{font-size:calc(9mm * var(--cs))}
+.tk-rule{font-size:calc(2.3mm * var(--bs)); line-height:1.3; color:#4A505C; white-space:nowrap; overflow:hidden}
+.tk-to{display:flex; align-items:flex-end; gap:1mm; margin-top:.8mm; font-family:var(--cute); font-weight:var(--cute-w); font-size:calc(3.3mm * var(--cs)); line-height:1.1}
+.tk-nm{flex:1; min-width:0; min-height:5mm; padding:0 .8mm .2mm; border-bottom:.3mm solid var(--pri); font-size:calc(3.9mm * var(--cs)); line-height:1.2; white-space:nowrap; overflow:hidden}
+.tk-seal{flex:none; position:relative; width:11.5mm; height:11.5mm; display:grid; place-items:center; border:.3mm dashed var(--pri); border-radius:1.8mm; color:var(--pri); font-family:var(--gothic); font-size:2mm; font-weight:800}
+.tk-seal img{position:absolute; left:-.6mm; top:-.6mm; width:12.7mm; height:12.7mm; object-fit:contain; mix-blend-mode:multiply}
+.tk-ft{flex:none; height:6mm; display:flex; align-items:center; gap:1.5mm; padding:0 2.6mm; border-top:.25mm dashed #D3D8DF; white-space:nowrap}
+.tk-ft em{flex:none; font-style:normal; font-family:var(--gothic); font-size:1.95mm; font-weight:800; color:var(--pri); border:.25mm solid currentColor; border-radius:2mm; padding:.15mm 1.1mm .1mm; line-height:1.3}
+.tk-ft strong{flex:1; min-width:0; overflow:hidden; font-family:var(--cute); font-weight:var(--cute-w); font-size:calc(3.1mm * var(--cs)); line-height:1.2}
+.size-hint{display:flex; flex-wrap:wrap; align-items:center; gap:8px; margin-top:10px; color:var(--sub); font-size:12.5px; font-weight:700}
+.size-hint:empty{display:none}
+
 /* 발급 내역 */
 .sheet.log{padding:16mm 15mm 0; font-family:var(--gothic); color:#1A1D23}
 .log-hd{display:flex; align-items:flex-end; justify-content:space-between; gap:4mm; border-bottom:.5mm solid #1A1D23; padding-bottom:3mm}
@@ -453,6 +486,7 @@ body.kiosk .stage{min-height:calc(100vh - 32px); justify-content:center}
             <label>1명당 <input type="number" id="perStudent" min="1" max="20"> 장</label>
             <label>이름 빈칸 쿠폰 <input type="number" id="blankCount" min="0" max="60"> 장</label>
           </div>
+          <div id="sizeHint" class="size-hint"></div>
         </div>
         <div class="panel">
           <h3><span class="step">3</span>사용기간</h3>
@@ -558,7 +592,7 @@ body.kiosk .stage{min-height:calc(100vh - 32px); justify-content:center}
         </div>
         <div class="panel editor" id="editor"></div>
         <div class="panel cpreview">
-          <h3>미리보기 <small>실제 크기 9.2 × 9.2cm</small></h3>
+          <h3>미리보기 <small id="previewSize">실제 크기 9.2 × 9.2cm</small></h3>
           <div class="mini-box" id="editPreviewBox"><div class="mini-scaler" id="editPreview"></div></div>
         </div>
       </div>
@@ -626,7 +660,7 @@ body.kiosk .stage{min-height:calc(100vh - 32px); justify-content:center}
         <div class="panel">
           <h3>초기화</h3>
           <div class="row">
-            <button class="btn" data-act="restoreDefaults">기본 쿠폰 6종으로 되돌리기</button>
+            <button class="btn" data-act="restoreDefaults">기본 쿠폰 7종으로 되돌리기</button>
             <button class="btn danger" data-act="resetAll">전체 초기화</button>
           </div>
         </div>
@@ -673,6 +707,11 @@ const BODY_FONTS = {
   pen:   {label:'나눔손글씨 펜',   sample:'청소 당번', css:"'Nanum Pen Script'", scale:1.45},
 };
 const KIND_LABEL = {normal:'일반', snack:'간식 고르기', blank:'꽝'};
+const SIZES = {     // 쿠폰 크기: l = 큰 쿠폰(92mm 정사각형), m·s = 작은 쿠폰(46mm 높이)
+  l:{per:6,  label:'크게',      seg:'크게 · A4 6장'},
+  m:{per:12, label:'작게',      seg:'작게 · A4 12장',      cols:2, w:94.5},
+  s:{per:18, label:'아주 작게', seg:'아주 작게 · A4 18장', cols:3, w:63},
+};
 const MISS_WEIGHTS = [[1,'똑같이'], [1.2,'1.2배'], [1.5,'1.5배'], [2,'2배']];     // 뽑기에서 꽝이 간식 하나보다 몇 배 자주 나오는지
 const EMOJIS = ['🧹','🧽','🪣','🧼','🪑','👑','💺','⏭️','🙊','🤫','🎧','📦','🎁','🧺','🍬','🍭','🍫','🍪','🍩','🧁','🍦','🍿','🥤','🍕','🍔','🍟','🎮','📚','✏️','⏰','🎵','⚽','🏀','💤','🛋️','🎫','⭐','🏆','🎉','😜','💨','🍀','🎯','💰','🎈','📱','🧸','🌈'];
 const STYLE_LINE = '스타일: 귀엽고 깔끔한 3D 아이콘 일러스트, 말랑한 클레이 질감, 밝은 파스텔 톤, 부드러운 조명과 그림자, 살짝 위에서 본 시점. 물체만 화면 중앙에 크게. 글자·숫자·로고 없음. 배경은 투명한 PNG, 정사각형.';
@@ -719,6 +758,8 @@ function defaultCoupons(){
         {name:'초코크림와플', emoji:'🧇', theme:'yellow', image:'default:snack-waffle', art:'크림색 낱개 포장지에 든, 초코크림을 반쯤 덮은 동그란 와플 과자 여러 개, 그중 하나는 포장을 벗긴 모습(상표 없음)'},
       ],
       customSnack:{emoji:'🍪', theme:'yellow', image:'default:snack-custom', art:'과자·젤리·사탕이 알록달록 섞여 담긴 귀여운 간식 봉지(상표 없음)'}},
+    {id:'c-ticket', name:'간식 뽑기권', kind:'normal', theme:'violet', style:'tiles', size:'s', emoji:'🎁', image:'default:snack-custom',
+      art:'알록달록한 간식 캡슐이 가득 든 동그란 캡슐 뽑기 기계(손잡이 달린 가챠 기계)', rule:'선생님께 내면 간식 뽑기를 1번 할 수 있어요.'},
     {id:'c-miss', name:'꽝', kind:'blank', theme:'gray', style:'tiles', emoji:'😜', image:'default:c-miss',
       art:"뚜껑이 열린 선물상자에서 용수철 달린 귀여운 동그란 얼굴이 '띠용' 하고 튀어나와 혀를 쏙 내밀고 메롱 하는 모습. 상자 안은 텅 비어 있음", rule:'아쉽지만 꽝! 다음 기회를 노려 보세요.'},
   ].map(normCoupon);
@@ -730,12 +771,19 @@ function defaultSettings(){
 }
 function defaults(){
   return {
-    v:3, settings:defaultSettings(), students:[], coupons:defaultCoupons(), queue:[], draws:[], serial:{day:'', seq:0},
+    v:4, settings:defaultSettings(), students:[], coupons:defaultCoupons(), queue:[], draws:[], serial:{day:'', seq:0},
     ui:{tab:'coupons', selCoupon:'c-clean', snack:'마이쮸', snackCustom:'', snackTheme:'pink', selStudents:[], perStudent:1, blankCount:0,
       editId:'c-clean', validity:{forever:false, date:addMonths(1)}, cautionOn:false, caution:''},
   };
 }
 // 기본 간식이 바뀐 것을 이미 쓰던 간식 교환권에도 반영한다 (from = 저장된 데이터의 버전)
+function migrateCoupons(coupons, from){
+  migrateSnacks(coupons, from);
+  if (from < 4 && !coupons.some(x => x.id === 'c-ticket')){     // v4: 기본 쿠폰에 '간식 뽑기권'이 생김
+    const i = coupons.findIndex(x => x.id === 'c-snack');
+    coupons.splice(i < 0 ? coupons.length : i + 1, 0, defaultCoupons().find(x => x.id === 'c-ticket'));
+  }
+}
 function migrateSnacks(coupons, from){
   const c = coupons.find(x => x.id === 'c-snack' && x.kind === 'snack'); if (!c) return;
   const defs = defaultCoupons().find(x => x.id === 'c-snack').snacks;
@@ -748,7 +796,7 @@ function migrateSnacks(coupons, from){
 function normCoupon(c){
   return {
     id:c.id || uid(), name:String(c.name ?? ''), kind:KIND_LABEL[c.kind] ? c.kind : 'normal',
-    theme:THEMES[c.theme] ? c.theme : 'sky', style:c.style === 'big' ? 'big' : 'tiles',
+    theme:THEMES[c.theme] ? c.theme : 'sky', style:c.style === 'big' ? 'big' : 'tiles', size:SIZES[c.size] ? c.size : 'l',
     emoji:c.emoji || '🎫', image:c.image || null, art:c.art || '', rule:c.rule || '',
     snacks:Array.isArray(c.snacks) ? c.snacks.map(normSnack) : [],
     customSnack:normSnack(c.customSnack || {emoji:'🍪', theme:'yellow', art:'과자·젤리·사탕이 알록달록 섞여 담긴 귀여운 간식 봉지(상표 없음)'}),
@@ -806,8 +854,8 @@ function load(){
       serial:d.serial && typeof d.serial.seq === 'number' ? d.serial : base.serial,
     };
     normSettings(st.settings);
-    migrateSnacks(st.coupons, d.v || 1);
-    st.v = 3;
+    migrateCoupons(st.coupons, d.v || 1);
+    st.v = 4;
     if (!st.ui.validity || !st.ui.validity.date || st.ui.validity.date < iso(new Date())) st.ui.validity = {forever:!!st.ui.validity?.forever, date:addMonths(1)};
     return st;
   }catch(e){ return base; }
@@ -911,6 +959,28 @@ function couponCell(it, removable){
     `</div><svg class="outline" viewBox="${TICKET.vb}" aria-hidden="true"><path d="${TICKET.d}"/></svg></div></div>`;
 }
 
+const sizeOf = c => SIZES[c?.size] ? c.size : 'l';
+const cellMM = c => { const sz = sizeOf(c); return sz === 'l' ? [92, 92] : [SIZES[sz].w, 46]; };     // 칸 크기 [가로, 세로] mm
+const anyCell = (it, removable) => sizeOf(it.coupon) === 'l' ? couponCell(it, removable) : ticketCell(it, removable);
+// 작은 쿠폰: 쿠폰 이름·그림·TO. 이름·사용기간·일련번호만 간단하게 (해시태그·주의사항은 빠짐)
+function ticketCell(it, removable){
+  const c = it.coupon, T = THEMES[themeOf(c, it)], st = S.settings, blank = c.kind === 'blank', sz = sizeOf(c);
+  const [l1, l2] = titleParts(c, it.snackName);
+  const art = artOf(c, it.snackName), src = imgSrc(art.image), stamp = imgSrc(st.stamp), serial = it.serial || '000000-000';
+  const vars = `--pri:${T.pri};--l1:${T.dark ? T.pri : T.l1};--big:${T.dark ? '#111114' : T.big};--soft:${T.dark ? '#FFE3E3' : T.soft}`;
+  return `<div class="tk ${sz}" style="${vars}">`+
+    (removable ? `<button class="rm no-print" data-act="rmItem" data-qid="${esc(it.qid)}" title="목록에서 빼기">✕</button>` : '')+
+    `<div class="tk-in"><div class="tk-band"><span>${esc(st.campaign)}</span><b>No.${esc(serial)}</b></div>`+
+      `<div class="tk-bd"><div class="tk-art">${src ? `<img src="${src}" alt="">` : `<i>${esc(art.emoji || '🎫')}</i>`}</div>`+
+        `<div class="tk-tx">${l1 ? `<div class="tk-l1 fit">${esc(l1)}</div>` : ''}<div class="tk-l2 fit">${esc(l2)}</div>`+
+          (sz === 'm' && c.rule ? `<div class="tk-rule fit">${esc(ruleOf(c, it.snackName))}</div>` : '')+
+          `<div class="tk-to"><span>TO.</span><span class="tk-nm fit">${esc(it.name)}</span></div></div>`+
+        (blank ? '' : `<div class="tk-seal">${stamp ? `<img src="${stamp}" alt="" style="transform:rotate(${(hash('st' + serial) % 13) - 6}deg)">` : '확인'}</div>`)+
+      `</div>`+
+      `<div class="tk-ft">${blank ? '<em>결과</em><strong class="fit">다음 기회에!</strong>' : `<em>사용기간</em><strong class="fit">${esc(validityText(it.validity))}</strong>`}</div>`+
+    `</div></div>`;
+}
+
 // 글자가 칸을 넘치면 조금씩 줄인다
 function fitIn(root){
   if (!root) return;
@@ -926,6 +996,14 @@ function fitIn(root){
 /* ───────── 출력 시트 ───────── */
 const CUTLINES = [13, 105, 197].map(x => `<i class="cut v" style="left:${x}mm"></i>`).join('') +
                  [10.5, 102.5, 194.5, 286.5].map(y => `<i class="cut h" style="top:${y}mm"></i>`).join('');
+function ticketSheet(items, sz){
+  const {per, cols, w} = SIZES[sz], cells = items.map(it => ticketCell(it, true));
+  while (cells.length < per) cells.push(`<div class="tk ${sz}"></div>`);
+  const cut = S.settings.cutLines ? Array.from({length:cols + 1}, (_, i) => `<i class="cut v" style="left:${10.5 + i * w}mm"></i>`).join('') +
+                                    Array.from({length:7}, (_, i) => `<i class="cut h" style="top:${10.5 + i * 46}mm"></i>`).join('') : '';
+  return `<div class="sheet">${cut}<div class="tgrid ${sz}">${cells.join('')}</div>`+
+    (S.settings.cutLines ? '<div class="sheet-foot">✂ 점선을 따라 잘라 주세요</div>' : '')+`</div>`;
+}
 function couponSheet(items){
   const cells = items.map(it => couponCell(it, true));
   while (cells.length < 6) cells.push('<div class="cell empty"></div>');
@@ -961,9 +1039,12 @@ function logSheets(items){
 function queueItems(){ return S.queue.map(q => ({...q, coupon:couponById(q.couponId)})).filter(q => q.coupon); }
 function renderQueue(){
   const items = queueItems(), pages = [];
-  for (let i = 0; i < items.length; i += 6) pages.push(items.slice(i, i + 6));
+  for (const sz of Object.keys(SIZES)){      // 크기별로 따로 모아서 A4에 채운다
+    const list = items.filter(it => sizeOf(it.coupon) === sz), per = SIZES[sz].per;
+    for (let i = 0; i < list.length; i += per) pages.push(sz === 'l' ? couponSheet(list.slice(i, i + per)) : ticketSheet(list.slice(i, i + per), sz));
+  }
   const logN = S.settings.printLog ? logPages(items).length : 0;
-  $('#sheets').innerHTML = pages.map(couponSheet).join('') + (S.settings.printLog ? logSheets(items) : '');
+  $('#sheets').innerHTML = pages.join('') + (S.settings.printLog ? logSheets(items) : '');
   $('#emptyQueue').hidden = items.length > 0;
   $('#scaleBox').hidden = !items.length;
   $('#qCount').textContent = items.length;
@@ -982,10 +1063,11 @@ function rescale(){
 /* ───────── ① 발급·인쇄 ───────── */
 let stuFilter = '';
 function sampleName(){ const s = S.students.find(x => S.ui.selStudents.includes(x.id)) || S.students[0]; return s ? s.name : '홍길동'; }
+// S.ui.snack: 간식 이름, '__custom'(직접 입력), '__any'(간식을 정하지 않은 그냥 간식 교환권)
 function currentSnack(c){ if (S.ui.snack === '__custom') return S.ui.snackCustom.trim(); return snackOf(c, S.ui.snack) ? S.ui.snack : ''; }
 function syncSnackTheme(c){
   if (!c || c.kind !== 'snack') return;
-  const s = S.ui.snack === '__custom' ? c.customSnack : snackOf(c, S.ui.snack);
+  const s = S.ui.snack === '__custom' || S.ui.snack === '__any' ? c.customSnack : snackOf(c, S.ui.snack);
   S.ui.snackTheme = s && THEMES[s.theme] ? s.theme : c.theme;
 }
 function swatch(c){
@@ -999,14 +1081,16 @@ function renderPick(){
   $('#pickCoupons').innerHTML = S.coupons.map(c => `<button class="pick ${c.id === S.ui.selCoupon ? 'on' : ''}" data-act="pickCoupon" data-id="${c.id}">${swatch(c)}<span class="pn">${esc(c.name || '(이름 없음)')}</span></button>`).join('')
     || '<div class="empty-sm">쿠폰이 없어요. 쿠폰 관리에서 만들어 주세요.</div>';
   const c = couponById(S.ui.selCoupon), sp = $('#pickSnack');
+  renderSizeHint(c);
   if (!c || c.kind !== 'snack'){ sp.hidden = true; sp.innerHTML = ''; updateAddBtn(); return; }
   const named = c.snacks.filter(s => s.name.trim());
-  if (S.ui.snack !== '__custom' && !snackOf(c, S.ui.snack)){ S.ui.snack = named[0]?.name || '__custom'; syncSnackTheme(c); }
+  if (S.ui.snack !== '__custom' && S.ui.snack !== '__any' && !snackOf(c, S.ui.snack)){ S.ui.snack = named[0]?.name || '__custom'; syncSnackTheme(c); }
   if (!THEMES[S.ui.snackTheme]) syncSnackTheme(c);
   sp.hidden = false;
   sp.innerHTML = `<div class="sub-label">어떤 간식인가요?</div><div class="chips">`+
     named.map(s => `<button class="chip ${S.ui.snack === s.name ? 'on' : ''}" data-act="pickSnack" data-name="${esc(s.name)}">${esc(s.emoji)} ${esc(s.name)}</button>`).join('')+
-    `<button class="chip ${S.ui.snack === '__custom' ? 'on' : ''}" data-act="pickSnack" data-name="__custom">✏️ 직접 입력</button></div>`+
+    `<button class="chip ${S.ui.snack === '__custom' ? 'on' : ''}" data-act="pickSnack" data-name="__custom">✏️ 직접 입력</button>`+
+    `<button class="chip ${S.ui.snack === '__any' ? 'on' : ''}" data-act="pickSnack" data-name="__any">${esc(c.customSnack.emoji || '🍪')} 그냥 ${esc(fullTitle(c, ''))}</button></div>`+
     (S.ui.snack === '__custom' ? `<input id="snackCustom" class="full" style="margin-top:8px" maxlength="10" placeholder="간식 이름 (예: 젤리)" value="${esc(S.ui.snackCustom)}">` : '')+
     `<div class="snack-tools" id="snackTools"></div>`+
     `<div class="sub-label" style="margin-top:14px">쿠폰 디자인 고르기</div><div class="theme-pick" id="themePick"></div>`;
@@ -1015,7 +1099,11 @@ function renderPick(){
 }
 function renderSnackTools(){
   const box = $('#snackTools'), c = couponById(S.ui.selCoupon); if (!box || !c || c.kind !== 'snack') return;
-  if (S.ui.snack === '__custom'){
+  if (S.ui.snack === '__any'){
+    const s = c.customSnack;
+    box.innerHTML = `${thumbHTML(s.image, s.emoji, 'sm')}<button class="btn sm" data-act="upload" data-target="custom:${c.id}">그림 ${imgSrc(s.image) ? '바꾸기' : '올리기'}</button>`+
+      `<small>간식 이름 없이 '${esc(fullTitle(c, ''))}'(이)라고 나가요. 그림은 직접 입력용 그림이 들어가요.</small>`;
+  } else if (S.ui.snack === '__custom'){
     const off = S.ui.snackCustom.trim() ? '' : 'disabled';
     box.innerHTML = `<button class="btn sm" data-act="issuePrompt" ${off}>🎨 그림 프롬프트 복사</button><button class="btn sm" data-act="saveCustomSnack" ${off}>＋ 간식 목록에 저장</button>`+
       `<small>간식 목록에 저장하면 이 간식만의 그림을 넣을 수 있어요. 저장하지 않으면 '직접 입력용' 그림이 들어가요.</small>`;
@@ -1028,12 +1116,12 @@ function renderSnackTools(){
 const thumbsSoon = debounce(() => renderThemeThumbs(), 150);
 function renderThemeThumbs(){
   const box = $('#themePick'), c = couponById(S.ui.selCoupon); if (!box || !c) return;
-  const snackName = currentSnack(c) || '간식', name = sampleName(), serial = peekSerial();
+  const snackName = currentSnack(c) || '간식', name = sampleName(), serial = peekSerial(), [w, h] = cellMM(c);
   box.innerHTML = Object.keys(THEMES).map(k => `<button class="tp ${S.ui.snackTheme === k ? 'on' : ''}" data-act="pickTheme" data-theme="${k}">`+
-    `<div class="tbox"><div class="tscale">${couponCell({coupon:c, name, snackName, validity:S.ui.validity, serial, theme:k})}</div></div><span>${THEMES[k].label}</span></button>`).join('');
+    `<div class="tbox" data-w="${w}" style="aspect-ratio:${w}/${h}"><div class="tscale">${anyCell({coupon:c, name, snackName, validity:S.ui.validity, serial, theme:k})}</div></div><span>${THEMES[k].label}</span></button>`).join('');
   fitIn(box); scaleThumbs();
 }
-function scaleThumbs(){ for (const b of $$('.tbox')){ const s = b.clientWidth / (92 * MM); if (s > 0) b.firstElementChild.style.transform = `scale(${s})`; } }
+function scaleThumbs(){ for (const b of $$('.tbox')){ const s = b.clientWidth / ((+b.dataset.w || 92) * MM); if (s > 0) b.firstElementChild.style.transform = `scale(${s})`; } }
 function renderStuPick(){
   const box = $('#stuList');
   if (!S.students.length){
@@ -1046,6 +1134,10 @@ function renderStuPick(){
       || '<div class="empty-sm">검색 결과가 없어요</div>';
   }
   updateSelInfo(); updateAddBtn();
+}
+function renderSizeHint(c){
+  const sz = sizeOf(c), n = SIZES[sz].per;
+  $('#sizeHint').innerHTML = c && sz !== 'l' ? `작은 쿠폰이라 A4 한 장에 ${n}장 들어가요.<button class="chip" data-act="fillSheet">이름 빈칸 ${n}장 (한 장 가득)</button>` : '';
 }
 function updateSelInfo(){ $('#selInfo').textContent = S.ui.selStudents.length ? `${S.ui.selStudents.length}명 선택` : ''; }
 function addCount(){ return S.ui.selStudents.length * clamp(S.ui.perStudent || 1, 1, 20) + clamp(S.ui.blankCount || 0, 0, 60); }
@@ -1072,7 +1164,7 @@ function addToQueue(){
   let snackName = '', theme;
   if (c.kind === 'snack'){
     snackName = currentSnack(c);
-    if (!snackName) return toast('간식 이름을 적어 주세요', true);
+    if (!snackName && S.ui.snack !== '__any') return toast('간식 이름을 적어 주세요', true);
     theme = S.ui.snackTheme;
   }
   const v = S.ui.validity;
@@ -1258,13 +1350,13 @@ function showDrawResult(rec, item, pick, left){
   box.innerHTML = (rec.miss || reducedMotion() ? '' : `<div class="confetti">${confettiHTML()}</div>`)+`<div class="dr-card ${rec.miss ? 'miss' : ''}">`+
     `<div class="dr-hi"><b>${esc(rec.name)}</b> 친구는…</div>`+
     `<div class="dr-win">${esc(pick.emoji)} ${rec.miss ? '아쉽지만 꽝!' : `${esc(pick.name)} 당첨!`}</div>`+
-    (c ? `<div class="dr-coupon"><div>${couponCell({...item, coupon:c})}</div></div>` : `<div class="dr-art">${src ? `<img src="${src}" alt="">` : esc(pick.emoji)}</div>`)+
+    (c ? `<div class="dr-coupon"><div>${anyCell({...item, coupon:c})}</div></div>` : `<div class="dr-art">${src ? `<img src="${src}" alt="">` : esc(pick.emoji)}</div>`)+
     `<div class="hint">${item ? `${rec.miss ? '꽝 쿠폰도 ' : ''}출력 목록에 담았어요 · No.${esc(item.serial)}` : '다음 기회를 노려 봐요!'}</div>`+
     `<div class="row" style="justify-content:center">`+
       (left > 0 ? `<button class="btn primary big" data-act="drawAgain">한 번 더 뽑기 · ${left}번 남음</button>` : '')+
       `<button class="btn ${left > 0 ? '' : 'primary '}big" data-act="drawNext">다음 친구 차례 →</button></div></div>`;
   box.hidden = false;
-  if (c) $('.dr-coupon > div', box).style.transform = `scale(${280 / (92 * MM)})`;
+  if (c){ const [w, h] = cellMM(c), s = 280 / (w * MM), d = $('.dr-coupon', box); d.style.height = h * MM * s + 'px'; d.firstElementChild.style.transform = `scale(${s})`; }
   fitIn(box);
   $('.dr-card .btn', box).focus();
 }
@@ -1308,7 +1400,7 @@ function renderCommon(){
   $('#stampRm').hidden = !src;
 }
 function renderCouponList(){
-  $('#couponList').innerHTML = S.coupons.map(c => `<button class="citem ${c.id === S.ui.editId ? 'on' : ''}" data-act="editCoupon" data-id="${c.id}">${swatch(c)}<span class="ct"><span>${esc(c.name || '(이름 없음)')}</span><small>${KIND_LABEL[c.kind]}</small></span></button>`).join('');
+  $('#couponList').innerHTML = S.coupons.map(c => `<button class="citem ${c.id === S.ui.editId ? 'on' : ''}" data-act="editCoupon" data-id="${c.id}">${swatch(c)}<span class="ct"><span>${esc(c.name || '(이름 없음)')}</span><small>${KIND_LABEL[c.kind]}${c.size !== 'l' ? ` · ${SIZES[c.size].label}` : ''}</small></span></button>`).join('');
 }
 const seg = (key, opts, val) => `<div class="seg">${opts.map(([v, l]) => `<button class="${v === val ? 'on' : ''}" data-act="seg" data-key="${key}" data-val="${v}">${l}</button>`).join('')}</div>`;
 const themeOptions = sel => Object.entries(THEMES).map(([k, T]) => `<option value="${k}" ${k === sel ? 'selected' : ''}>${T.label}</option>`).join('');
@@ -1321,6 +1413,8 @@ function renderEditor(){
     `<label class="fld">쿠폰 이름<input data-f="name" value="${esc(c.name)}" maxlength="20">`+
       `<small>${snack ? '앞 단어는 고른 간식 이름으로 바뀌어요. 예) 간식 교환권 → 마이쮸 교환권' : '띄어쓰기로 두 줄이 되고, 마지막 단어가 크게 강조돼요. 예) 청소 면제권'}</small></label>`+
     `<div class="fld">종류${seg('kind', [['normal','일반'],['snack','간식 고르기'],['blank','꽝']], c.kind)}</div>`+
+    `<div class="fld">크기${seg('size', Object.entries(SIZES).map(([k, z]) => [k, z.seg]), c.size)}`+
+      (c.size !== 'l' ? `<small>작은 쿠폰에는 쿠폰 이름·그림·이름·사용기간·일련번호만 간단하게 들어가요.</small>` : '')+`</div>`+
     `<div class="fld">제목 모양${seg('style', [['tiles','글자 블록'],['big','큰 글씨']], c.style)}</div>`+
     (snack ? snackEditor(c) : `<div class="fld">색상 테마<div class="swatches">${Object.entries(THEMES).map(([k, T]) => `<button class="swatch ${c.theme === k ? 'on' : ''}" data-act="theme" data-theme="${k}" title="${T.label}" style="background:linear-gradient(135deg,${T.frame[0]} 0 50%,${T.tile} 50%)"></button>`).join('')}</div></div>`+
       `<div class="fld">그림<div class="art-row">${thumbHTML(c.image, c.emoji)}`+
@@ -1359,14 +1453,17 @@ function renderEditPreview(){
     snackName = editSnackIdx < 0 ? (S.ui.snackCustom.trim() || '젤리') : (c.snacks[editSnackIdx]?.name || '간식');
   }
   const theme = c.kind === 'snack' ? (editSnackIdx < 0 ? c.customSnack.theme : c.snacks[editSnackIdx]?.theme) : undefined;
-  box.innerHTML = couponCell({coupon:c, name:sampleName(), snackName, theme, validity:S.ui.validity, serial:peekSerial(), caution:S.ui.cautionOn ? S.ui.caution : ''});
+  const [w, h] = cellMM(c);
+  $('#previewSize').textContent = `실제 크기 ${+(w / 10).toFixed(2)} × ${+(h / 10).toFixed(2)}cm${w === 92 ? '' : ` · A4 ${SIZES[sizeOf(c)].per}장`}`;
+  box.innerHTML = anyCell({coupon:c, name:sampleName(), snackName, theme, validity:S.ui.validity, serial:peekSerial(), caution:S.ui.cautionOn ? S.ui.caution : ''});
   fitIn(box); rescaleMini();
 }
 function rescaleMini(){
-  const box = $('#editPreviewBox'), avail = box.parentElement.clientWidth - 36, nat = 92 * MM;
-  const s = clamp(avail / nat, 0.4, 1.3);
+  const box = $('#editPreviewBox'), avail = box.parentElement.clientWidth - 36, [w, h] = cellMM(editing());
+  const s = clamp(avail / (w * MM), 0.4, w === 92 ? 1.3 : 1.8);      // 작은 쿠폰은 크게 키워서 보여 줌
+  $('#editPreview').style.width = w + 'mm';
   $('#editPreview').style.transform = `scale(${s})`;
-  box.style.width = nat * s + 'px'; box.style.height = nat * s + 'px';
+  box.style.width = w * MM * s + 'px'; box.style.height = h * MM * s + 'px';
 }
 function renderCouponsTab(){ renderCommon(); renderCouponList(); renderEditor(); renderEditPreview(); }
 const refreshAfterCouponEdit = debounce(() => { renderCouponList(); renderEditPreview(); renderPick(); renderQueue(); renderDraw(); }, 120);
@@ -1553,6 +1650,7 @@ const actions = {
     renderIssueInputs(); renderEditPreview(); renderThemeThumbs(); save();
   },
   addQueue: () => addToQueue(),
+  fillSheet: () => { S.ui.blankCount = SIZES[sizeOf(couponById(S.ui.selCoupon))].per; renderIssueInputs(); updateAddBtn(); save(); },
   goIssue: () => { const c = editing(); if (!c) return; S.ui.selCoupon = c.id; syncSnackTheme(c); renderPick(); save(); switchTab('issue'); },
   goDraw: () => { const c = editing(); if (!c) return; S.settings.drawCoupon = c.id; save(); switchTab('draw'); },
   draw: () => doDraw(),
@@ -1674,7 +1772,7 @@ const actions = {
   exportBackup: () => exportBackup(),
   importBackup: () => { const f = $('#importIn'); f.value = ''; f.click(); },
   restoreDefaults: () => {
-    if (!confirm('쿠폰을 기본 6종으로 되돌릴까요?\n직접 만들거나 고친 쿠폰은 사라져요. (학생 명단은 그대로예요)')) return;
+    if (!confirm('쿠폰을 기본 7종으로 되돌릴까요?\n직접 만들거나 고친 쿠폰은 사라져요. (학생 명단은 그대로예요)')) return;
     S.coupons = defaultCoupons(); S.queue = S.queue.filter(q => couponById(q.couponId));
     S.ui.editId = 'c-clean'; S.ui.selCoupon = 'c-clean'; renderAll(); save(); toast('기본 쿠폰으로 되돌렸어요');
   },
