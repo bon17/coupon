@@ -3,7 +3,8 @@
 
 파일 이름(확장자 제외)이 그림 키가 된다:
   c-clean, c-seat, c-nag, c-stash, c-miss,
-  snack-mychew, snack-candy, snack-choco, snack-custom, stamp
+  snack-mychew, snack-candy, snack-choco, snack-crunch, snack-crepe, snack-waffle,
+  snack-custom, stamp
 
 사용법: python3 tools/embed_images.py
 """
@@ -15,7 +16,8 @@ from pathlib import Path
 from PIL import Image, ImageDraw
 
 KEYS = ['c-clean', 'c-seat', 'c-nag', 'c-stash', 'c-miss',
-        'snack-mychew', 'snack-candy', 'snack-choco', 'snack-custom', 'stamp']
+        'snack-mychew', 'snack-candy', 'snack-choco', 'snack-crunch', 'snack-crepe', 'snack-waffle',
+        'snack-custom', 'stamp']
 ROOT = Path(__file__).resolve().parent.parent
 MAX_SIDE = 600
 
